@@ -40,7 +40,9 @@ jobs:
       - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: dist/client
+          # vinext writes a basePath export into a matching subdirectory. Pages
+          # already mounts the artifact at that base path, so upload its contents.
+          path: dist/client${{ steps.pages.outputs.base_path }}
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
