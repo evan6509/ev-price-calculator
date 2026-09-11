@@ -37,6 +37,12 @@ jobs:
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: npm run build
+
+      # GitHub Pages otherwise treats the nested `_next` directory as Jekyll
+      # source and drops the app's styles and scripts during publication.
+      - name: Preserve Next.js assets
+        run: touch dist/client/.nojekyll
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
