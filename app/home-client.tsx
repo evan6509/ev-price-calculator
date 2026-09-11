@@ -702,6 +702,21 @@ function NumberField({
   const inputId = useId();
   const minimum = Number(min ?? '0');
   const maximum = max === undefined ? Number.POSITIVE_INFINITY : Number(max);
+  const [draftValue, setDraftValue] = useState(() => String(value));
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Keep a separate string while the field has focus. Updating the numeric
+  // state for every keystroke would turn an empty input into its minimum
+  // value, making values such as 2.1 frustrating to enter or replace.
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftValue(String(value));
+    }
+  }, [isEditing, value]);
+
+  const clampValue = (nextValue: number) =>
+    Math.min(maximum, Math.max(minimum, nextValue));
+
   return (
     <div>
       <label htmlFor={inputId} className="field-label">
@@ -712,21 +727,35 @@ function NumberField({
         <Input
           id={inputId}
           type="number"
-          value={Number.isFinite(value) ? value : minimum}
+          value={draftValue}
           min={minimum}
           max={max}
           step={step}
+          onFocus={() => setIsEditing(true)}
           onChange={(event) => {
-            const nextValue = Number(event.target.value);
-            onChange(
-              Math.min(
-                maximum,
-                Math.max(
-                  minimum,
-                  Number.isFinite(nextValue) ? nextValue : minimum,
-                ),
-              ),
-            );
+            const nextDraft = event.target.value;
+            setDraftValue(nextDraft);
+
+            if (nextDraft === '') return;
+
+            const nextValue = Number(nextDraft);
+            if (Number.isFinite(nextValue)) {
+              onChange(clampValue(nextValue));
+            }
+          }}
+          onBlur={() => {
+            setIsEditing(false);
+
+            const nextValue = Number(draftValue);
+            const resolvedValue =
+              draftValue !== '' && Number.isFinite(nextValue)
+                ? clampValue(nextValue)
+                : value;
+
+            setDraftValue(String(resolvedValue));
+            if (resolvedValue !== value) {
+              onChange(resolvedValue);
+            }
           }}
           className={`h-10 border-[#d5dfd7] bg-[#fbfdfb] font-semibold tabular-nums focus-visible:border-[#4e9270] ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-8' : ''}`}
         />
